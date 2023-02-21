@@ -3,8 +3,7 @@ const ejs = require("ejs");
 const mongoose = require("mongoose");
 const app = express();
 require('dotenv').config()
-const md5 = require('md5');
-
+const bcrypt = require('bcryptjs');
 
 app.use(express.static("public"));
 app.use(express.urlencoded({ extended: true }));
@@ -18,7 +17,6 @@ async function main() {
 };
 
 const userSchema = new mongoose.Schema({ email: { type: String }, password: { type: String } });
-
 const User = mongoose.model("User", userSchema);
 
 app.get("/", (req, res) => res.render("home"));
@@ -26,17 +24,19 @@ app.get("/", (req, res) => res.render("home"));
 app.get("/login", (req, res) => res.render("login"));
 
 app.post("/login", (req, res) => {
-    const username = req.body.username
-    const password = md5(req.body.password)
+    const username = req.body.username;
+    const password = req.body.password;
     User.findOne({ email: username }, (err, foundUser) => {
         if (err) {
             console.log(err)
         } else {
-            if(foundUser) {
-                if (foundUser.password === password) {
-                    res.render("secrets")
-                }; 
-            };   
+            if (foundUser) {
+                bcrypt.compare(password, foundUser.password, function (err, result) {
+                    if (result === true) {
+                        res.render("secrets")
+                    };
+                });
+            };
         };
     });
 });
@@ -44,16 +44,23 @@ app.post("/login", (req, res) => {
 app.get("/register", (req, res) => res.render("register"));
 
 app.post("/register", (req, res) => {
-    const newUser = new User({
-        email: req.body.username,
-        password: md5(req.body.password)
-    });
-    newUser.save((err) => {
-        if (!err) {
-            res.render("secrets")
-        } else {
-            console.log(err)
-        };
+
+    bcrypt.genSalt(10, function (err, salt) {
+        bcrypt.hash(req.body.password, salt, function (err, hash) {
+            // Store hash in your password DB.
+            const newUser = new User({
+                email: req.body.username,
+                password: hash
+            });
+            console.log(err);
+            newUser.save((err) => {
+                if (!err) {
+                    res.render("secrets")
+                } else {
+                    console.log(err)
+                };
+            });
+        });
     });
 });
 
