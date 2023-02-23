@@ -9,8 +9,14 @@ body {
 }
 
 .secret-text {
-  text-align: center;
   font-size: 2rem;
   color: #fff;
   background-color: #000;
+}
+
+.j {
+  margin-top: 200px;
+  display: flex;
+  text-align: center;
+  align-items: center;
 }
